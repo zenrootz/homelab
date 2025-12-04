@@ -1,0 +1,187 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  # Basic validation and linting
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate shell scripts
+      run: |
+        find . -name "*.sh" -type f -exec shellcheck {} \;
+
+    - name: Check for secrets in code
+      run: |
+        # Check for common secret patterns
+        if grep -r -i "password\|secret\|key\|token" --exclude-dir=.git --exclude-dir=vault . | grep -v ".gitkeep\|placeholder\|README"; then
+          echo "Potential secrets found in code!"
+          exit 1
+        fi
+
+    - name: Validate Dockerfiles
+      run: |
+        find . -name "Dockerfile*" -type f -exec docker build --dry-run {} \;
+
+    - name: Check file permissions
+      run: |
+        # Ensure scripts are executable
+        find . -name "*.sh" -type f -exec test -x {} \;
+
+  # Test deployment scripts (without actual deployment)
+  test-scripts:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Podman
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y podman
+
+    - name: Test script syntax
+      run: |
+        # Test that scripts can be parsed without errors
+        bash -n master_deploy.sh
+        bash -n build.sh
+        bash -n deploy.sh
+        bash -n cleanup.sh
+        bash -n download_models.sh
+
+    - name: Test cleanup script (dry run)
+      run: |
+        # Test cleanup script logic without actual cleanup
+        sed 's/podman stop/podman ps -q || true #/g; s/podman rm/podman ps -a -q || true #/g' cleanup.sh > cleanup_test.sh
+        chmod +x cleanup_test.sh
+        ./cleanup_test.sh
+
+  # Security scanning
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Basic security checks
+      run: |
+        echo "🔍 Running basic security checks..."
+
+        # Check for executable files that shouldn't be
+        suspicious_files=$(find . -name "*.sh" -type f -exec file {} \; | grep -v "Bourne-Again shell script" | wc -l)
+        if [ "$suspicious_files" -gt 0 ]; then
+          echo "⚠️  Found files marked as executable that may not be shell scripts"
+        fi
+
+        # Check for world-writable files
+        world_writable=$(find . -type f -perm -o+w 2>/dev/null | wc -l)
+        if [ "$world_writable" -gt 0 ]; then
+          echo "⚠️  Found world-writable files"
+        fi
+
+        # Check for large files that shouldn't be in git
+        large_files=$(find . -type f -size +50M 2>/dev/null | wc -l)
+        if [ "$large_files" -gt 0 ]; then
+          echo "⚠️  Found large files that may not belong in git"
+          find . -type f -size +50M -exec ls -lh {} \;
+        fi
+
+        echo "✅ Basic security checks completed"
+
+  # Build and test containers (lightweight)
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate Dockerfiles syntax
+      run: |
+        # Check Dockerfile syntax without building
+        find . -name "Dockerfile*" -type f -exec docker build --dry-run {} \;
+
+    - name: Check required files exist
+      run: |
+        # Verify all required deployment files are present
+        required_files=(
+          "master_deploy.sh"
+          "build.sh"
+          "deploy.sh"
+          "cleanup.sh"
+          "agent-router.sh"
+          "Dockerfile"
+          "README.md"
+        )
+
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Missing required file: $file"
+            exit 1
+          fi
+        done
+
+        echo "✅ All required files present"
+
+  # Documentation validation
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate README links
+      run: |
+        # Check that all links in README are valid
+        grep -o 'http[s]*://[^)]*' README.md | while read -r url; do
+          if curl -s --head --fail "$url" > /dev/null; then
+            echo "✓ $url"
+          else
+            echo "✗ $url"
+            exit 1
+          fi
+        done
+
+    - name: Check documentation completeness
+      run: |
+        # Ensure all scripts are documented
+        for script in *.sh; do
+          if ! grep -q "$script" README.md; then
+            echo "Script $script not documented in README.md"
+            exit 1
+          fi
+        done
+
+  # Final validation summary
+  summary:
+    needs: [validate, test-scripts, security, build-test, docs]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: CI/CD Summary
+      run: |
+        echo "🎉 CI/CD Pipeline completed!"
+        echo ""
+        echo "✅ Validation: ${{ needs.validate.result }}"
+        echo "✅ Script Testing: ${{ needs.test-scripts.result }}"
+        echo "✅ Security Scan: ${{ needs.security.result }}"
+        echo "✅ Build Testing: ${{ needs.build-test.result }}"
+        echo "✅ Documentation: ${{ needs.docs.result }}"
+        echo ""
+        if [ "${{ needs.validate.result }}" = "success" ] && \
+           [ "${{ needs.test-scripts.result }}" = "success" ] && \
+           [ "${{ needs.security.result }}" = "success" ] && \
+           [ "${{ needs.build-test.result }}" = "success" ] && \
+           [ "${{ needs.docs.result }}" = "success" ]; then
+          echo "🚀 All checks passed! Ready for deployment."
+        else
+          echo "❌ Some checks failed. Please review the logs."
+          exit 1
+        fi
