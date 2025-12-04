@@ -1,0 +1,22 @@
+FROM qwen-base:latest
+
+# Copy voice configuration
+COPY vault/configs/voice.json /app/config.json
+
+# Set environment variables
+ENV MODEL_PATH=/vault/models/qwen2-audio-7b-q5_k_m.gguf
+ENV PORT=8083
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# Expose port
+EXPOSE ${PORT}
+
+# Start command
+CMD ["/usr/local/bin/llama-server", \
+     "-m", "${MODEL_PATH}", \
+     "--port", "${PORT}", \
+     "-ngl", "99", \
+     "-c", "4096"]

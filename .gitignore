@@ -1,0 +1,43 @@
+# Sensitive data - never commit
+vault/apis/
+vault/certs/
+vault/logs/
+vault/backups/
+*.key
+*.pem
+*.crt
+*secret*
+*credential*
+
+# Build artifacts
+llama.cpp/build/
+*.log
+
+# Model files (large, should be downloaded)
+vault/models/*.gguf
+llama.cpp/models/*.gguf
+!vault/models/*.placeholder
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# Cache and temporary directories
+.cache/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+vault/models/.cache/
+huggingface/

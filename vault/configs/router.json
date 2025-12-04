@@ -1,0 +1,8 @@
+{
+  "agent_url": "http://qwen-agent:8084",
+  "coder_url": "http://qwen-coder:8081",
+  "vision_url": "http://qwen-vision:8082",
+  "voice_url": "http://qwen-voice:8083",
+  "log_level": "info",
+  "health_check_interval": 30
+}

@@ -1,0 +1,21 @@
+FROM qwen-base:latest
+
+# Copy coder configuration
+COPY vault/configs/coder.json /app/config.json
+
+# Copy model file
+COPY vault/models/qwen2.5-coder-7b-instruct-q5_k_m.gguf /models/model.gguf
+
+# Set environment variables
+ENV MODEL_PATH=/models/model.gguf
+ENV PORT=8081
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# Expose port
+EXPOSE ${PORT}
+
+# Start command
+CMD ["/bin/bash", "-c", "/usr/local/bin/llama-server -m ${MODEL_PATH} --host 0.0.0.0 --port ${PORT} -ngl 99 -c 16384"]

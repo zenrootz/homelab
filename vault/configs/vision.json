@@ -1,0 +1,12 @@
+{
+  "model": "/vault/models/Qwen2-VL-7B-Instruct-Q5_K_M.gguf",
+  "mmproj": "/vault/models/mmproj-model-f16.gguf",
+  "port": 8082,
+  "host": "0.0.0.0",
+  "n_gpu_layers": 99,
+  "ctx_size": 8192,
+  "threads": -1,
+  "flash_attn": false,
+  "metrics": true,
+  "health": true
+}

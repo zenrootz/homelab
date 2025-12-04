@@ -1,0 +1,7 @@
+VAULT INFORMATION
+=================
+This vault contains all certificates, API keys, and sensitive data
+for the homelab deployment. All data is encrypted and managed
+automatically.
+
+DO NOT MODIFY FILES MANUALLY - Use provided scripts only.

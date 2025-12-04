@@ -1,0 +1,25 @@
+FROM registry.fedoraproject.org/fedora:latest
+
+# Install dependencies
+RUN dnf install -y \
+    curl \
+    jq \
+    bash \
+    && dnf clean all
+
+# Copy router script
+COPY agent-router.sh /app/agent-router.sh
+RUN chmod +x /app/agent-router.sh
+
+# Copy configuration
+COPY vault/configs/router.json /app/config.json
+
+# Set working directory
+WORKDIR /app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD pgrep -f agent-router.sh || exit 1
+
+# Default command
+CMD ["/app/agent-router.sh"]

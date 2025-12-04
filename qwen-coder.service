@@ -1,0 +1,14 @@
+[Unit]
+Description=Qwen Coder Container
+After=network.target
+Requires=qwen-network.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/podman start qwen-coder
+ExecStop=/usr/bin/podman stop qwen-coder
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

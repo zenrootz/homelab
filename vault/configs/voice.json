@@ -1,0 +1,11 @@
+{
+  "model": "/vault/models/qwen2-audio-7b-q5_k_m.gguf",
+  "port": 8083,
+  "host": "0.0.0.0",
+  "n_gpu_layers": 99,
+  "ctx_size": 4096,
+  "threads": -1,
+  "flash_attn": false,
+  "metrics": true,
+  "health": true
+}

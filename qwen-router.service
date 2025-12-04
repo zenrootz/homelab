@@ -1,0 +1,14 @@
+[Unit]
+Description=Qwen Router Container
+After=network.target
+Requires=qwen-network.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/podman start qwen-router
+ExecStop=/usr/bin/podman stop qwen-router
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

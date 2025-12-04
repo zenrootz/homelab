@@ -1,0 +1,23 @@
+FROM qwen-base:latest
+
+# Copy vision configuration
+COPY vault/configs/vision.json /app/config.json
+
+# Copy model files
+COPY vault/models/Qwen2-VL-7B-Instruct-Q5_K_M.gguf /models/vision.gguf
+COPY vault/models/mmproj-Qwen2-VL-7B-Instruct-f16.gguf /models/mmproj.gguf
+
+# Set environment variables
+ENV MODEL_PATH=/models/vision.gguf
+ENV MMPROJ_PATH=/models/mmproj.gguf
+ENV PORT=8082
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# Expose port
+EXPOSE ${PORT}
+
+# Start command
+CMD ["/bin/bash", "-c", "/usr/local/bin/llama-server -m ${MODEL_PATH} --mmproj ${MMPROJ_PATH} --host 0.0.0.0 --port ${PORT} -ngl 99 -c 8192"]

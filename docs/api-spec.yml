@@ -1,0 +1,335 @@
+openapi: 3.0.3
+info:
+  title: Qwen Multimodal Agent API
+  description: |
+    REST API for the Qwen Multimodal Agent system providing intelligent AI services
+    for text generation, code assistance, vision analysis, and voice processing.
+  version: 1.0.0
+  contact:
+    name: Homelab Support
+    email: support@homelab.local
+
+servers:
+  - url: http://localhost:8084
+    description: Agent Service (Main Orchestrator)
+  - url: http://localhost:8081
+    description: Coder Service (Code Generation)
+  - url: http://localhost:8082
+    description: Vision Service (Image Analysis)
+  - url: http://localhost:8083
+    description: Voice Service (Audio Processing)
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Check if the service is running and healthy
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  uptime:
+                    type: string
+                    example: "1h 30m"
+                  version:
+                    type: string
+                    example: "1.0.0"
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "unhealthy"
+                  error:
+                    type: string
+                    example: "Model not loaded"
+
+  /completion:
+    post:
+      summary: Generate text completion
+      description: Generate text completion using the AI model
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prompt
+              properties:
+                prompt:
+                  type: string
+                  description: The input prompt for text generation
+                  example: "Write a Python function to calculate fibonacci numbers"
+                n_predict:
+                  type: integer
+                  description: Maximum number of tokens to generate
+                  default: 128
+                  minimum: 1
+                  maximum: 4096
+                  example: 256
+                temperature:
+                  type: number
+                  description: Sampling temperature (0.0 = deterministic, 1.0 = creative)
+                  minimum: 0.0
+                  maximum: 2.0
+                  default: 0.8
+                  example: 0.7
+                top_p:
+                  type: number
+                  description: Nucleus sampling parameter
+                  minimum: 0.0
+                  maximum: 1.0
+                  default: 0.9
+                  example: 0.9
+                top_k:
+                  type: integer
+                  description: Top-k sampling parameter
+                  minimum: 1
+                  maximum: 100
+                  default: 40
+                  example: 40
+                stream:
+                  type: boolean
+                  description: Enable streaming response
+                  default: false
+                  example: true
+      responses:
+        '200':
+          description: Successful completion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+                    description: Generated text content
+                    example: "def fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)"
+                  tokens_generated:
+                    type: integer
+                    description: Number of tokens generated
+                    example: 45
+                  tokens_evaluated:
+                    type: integer
+                    description: Number of input tokens processed
+                    example: 12
+                  generation_time:
+                    type: number
+                    description: Time taken for generation in seconds
+                    example: 2.34
+                  tokens_per_second:
+                    type: number
+                    description: Generation speed
+                    example: 19.23
+        '400':
+          description: Bad request - invalid parameters
+        '503':
+          description: Service unavailable - model not loaded
+
+  /chat/completions:
+    post:
+      summary: Chat completion (OpenAI-compatible)
+      description: Generate chat completion using OpenAI-compatible API format
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - messages
+              properties:
+                messages:
+                  type: array
+                  description: Array of chat messages
+                  items:
+                    type: object
+                    required:
+                      - role
+                      - content
+                    properties:
+                      role:
+                        type: string
+                        enum: [system, user, assistant]
+                        example: "user"
+                      content:
+                        type: string
+                        description: Message content
+                        example: "Explain how recursion works"
+                max_tokens:
+                  type: integer
+                  description: Maximum tokens to generate
+                  default: 1024
+                  example: 512
+                temperature:
+                  type: number
+                  description: Sampling temperature
+                  default: 0.7
+                  minimum: 0.0
+                  maximum: 2.0
+                stream:
+                  type: boolean
+                  description: Enable streaming
+                  default: false
+      responses:
+        '200':
+          description: Successful chat completion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "chatcmpl-123"
+                  object:
+                    type: string
+                    example: "chat.completion"
+                  created:
+                    type: integer
+                    example: 1677652288
+                  model:
+                    type: string
+                    example: "qwen-3b"
+                  choices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        index:
+                          type: integer
+                          example: 0
+                        message:
+                          type: object
+                          properties:
+                            role:
+                              type: string
+                              example: "assistant"
+                            content:
+                              type: string
+                              example: "Recursion is a programming technique where a function calls itself..."
+                        finish_reason:
+                          type: string
+                          enum: [stop, length]
+                          example: "stop"
+                  usage:
+                    type: object
+                    properties:
+                      prompt_tokens:
+                        type: integer
+                        example: 13
+                      completion_tokens:
+                        type: integer
+                        example: 47
+                      total_tokens:
+                        type: integer
+                        example: 60
+
+  /v1/chat/completions:
+    post:
+      summary: Vision-enabled chat completion
+      description: Generate chat completion with image input support
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - messages
+              properties:
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role:
+                        type: string
+                        enum: [system, user, assistant]
+                      content:
+                        oneOf:
+                          - type: string
+                          - type: array
+                            items:
+                              oneOf:
+                                - type: object
+                                  properties:
+                                    type:
+                                      type: string
+                                      enum: [text]
+                                    text:
+                                      type: string
+                                - type: object
+                                  properties:
+                                    type:
+                                      type: string
+                                      enum: [image_url]
+                                    image_url:
+                                      type: object
+                                      properties:
+                                        url:
+                                          type: string
+                                          description: Base64 encoded image or image URL
+                                          example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
+                max_tokens:
+                  type: integer
+                  default: 1024
+      responses:
+        '200':
+          description: Successful vision-enabled completion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  choices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        message:
+                          type: object
+                          properties:
+                            content:
+                              type: string
+                              example: "I can see a chart showing quarterly sales data with an upward trend..."
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Model not loaded"
+            type:
+              type: string
+              example: "model_error"
+            code:
+              type: integer
+              example: 503
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: "Optional API key for authenticated requests"
+
+security:
+  - ApiKeyAuth: []

@@ -1,0 +1,47 @@
+# Code owners for Qwen Multimodal Agent
+# https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners (fallback for all files)
+* @YOUR_USERNAME
+
+# Core deployment scripts
+master_deploy.sh
+build.sh
+deploy.sh
+cleanup.sh
+agent-router.sh
+download_models.sh
+secrets.sh
+check_github_usage.sh
+cleanup_repo.sh
+
+# Docker configurations
+Dockerfile*
+docker-compose*.yml
+
+# GitHub configurations
+.github/**
+
+# Documentation
+README.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+GITHUB_UPLOAD.md
+docs/**
+
+# Configuration files
+vault/configs/**
+
+# Monitoring stack
+monitoring/**
+
+# CI/CD and automation
+.github/workflows/**
+
+# Dependencies and external code
+llama.cpp/**
+
+# System files (usually don't change)
+LICENSE
+.gitignore

@@ -1,0 +1,21 @@
+FROM qwen-base:latest
+
+# Copy agent configuration
+COPY vault/configs/agent.json /app/config.json
+
+# Copy model file
+COPY vault/models/Qwen3-4B-Q4_K_M.gguf /models/agent.gguf
+
+# Set environment variables
+ENV MODEL_PATH=/models/agent.gguf
+ENV PORT=8084
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# Expose port
+EXPOSE ${PORT}
+
+# Start command
+CMD ["/bin/bash", "-c", "/usr/local/bin/llama-server -m ${MODEL_PATH} --host 0.0.0.0 --port ${PORT} -ngl 99 -c 8192"]

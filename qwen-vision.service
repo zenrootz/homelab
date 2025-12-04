@@ -1,0 +1,14 @@
+[Unit]
+Description=Qwen Vision Container
+After=network.target
+Requires=qwen-network.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/podman start qwen-vision
+ExecStop=/usr/bin/podman stop qwen-vision
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
